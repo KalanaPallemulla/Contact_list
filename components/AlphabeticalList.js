@@ -1,46 +1,83 @@
 import React, {useRef, useState} from 'react';
-import {StyleSheet, Text, View, PanResponder} from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  PanResponder,
+  TouchableWithoutFeedback,
+} from 'react-native';
 
 const AlphabeticalList = ({handleLongPressMove, groupedContacts}) => {
-  const letters = Object.keys(groupedContacts).sort();
-  const [prevLetter, setPrevLetter] = useState('');
+  // const letters = Object.keys(groupedContacts).sort();
+  const letters = [
+    '#',
+    'A',
+    'B',
+    'C',
+    'D',
+    'E',
+    'F',
+    'G',
+    'H',
+    'I',
+    'J',
+    'K',
+    'L',
+    'M',
+    'N',
+    'O',
+    'P',
+    'Q',
+    'R',
+    'S',
+    'T',
+    'U',
+    'V',
+    'W',
+    'X',
+    'Y',
+    'Z',
+  ];
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderGrant: (_, gestureState) => {
-        const touchedLetter = getTouchedLetter(gestureState.y0);
-        if (prevLetter !== touchedLetter) {
-          setPrevLetter(touchedLetter);
-          handleLongPressMove(touchedLetter);
-        }
-      },
-      onPanResponderMove: (_, gestureState) => {
-        const touchedLetter = getTouchedLetter(gestureState.moveY);
-        if (prevLetter !== touchedLetter) {
-          setPrevLetter(touchedLetter);
-          handleLongPressMove(touchedLetter);
-        }
-      },
-      onPanResponderRelease: () => {
-        setPrevLetter('');
-      },
-    }),
-  ).current;
+  const [currentLetterIndex, setCurrentLetterIndex] = useState(0);
 
-  const getTouchedLetter = y => {
-    const index = Math.floor(y / 50);
-    return letters[index];
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onPanResponderGrant: (evt, gestureState) => {
+      const touchLocationY = evt.nativeEvent.locationY;
+      const letterHeight = 20; // Adjust as needed
+      const touchedLetterIndex = Math.floor(touchLocationY / letterHeight);
+      setCurrentLetterIndex(touchedLetterIndex);
+    },
+  });
+
+  const handleLongPress = () => {
+    const pressedLetter = letters[currentLetterIndex];
+    console.log('Pressed Letter:', pressedLetter);
+    // You can perform any additional actions here with the pressed letter
   };
 
   return (
-    <View style={styles.container}>
+    <View>
       <View {...panResponder.panHandlers}>
-        {letters.map((letter, index) => (
-          <View key={index}>
-            <Text style={styles.letter}>{letter}</Text>
+        <TouchableWithoutFeedback
+          onLongPress={handleLongPress}
+          onPressOut={() => {
+            console.log('Long Press Ended');
+            // You can add more functionality here if needed
+          }}>
+          <View>
+            {letters.map((letter, index) => (
+              <Text
+                key={index}
+                style={{
+                  fontWeight: index === currentLetterIndex ? 'bold' : 'normal',
+                }}>
+                {letter}
+              </Text>
+            ))}
           </View>
-        ))}
+        </TouchableWithoutFeedback>
       </View>
     </View>
   );
@@ -51,7 +88,7 @@ export default AlphabeticalList;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'red',
+    // backgroundColor: 'red',
   },
   letter: {
     fontSize: 20,

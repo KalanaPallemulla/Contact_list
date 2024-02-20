@@ -89,10 +89,18 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+    //     release {
+    //   storeFile file('contactList.keystore')
+    //   storePassword '123456'
+    //   keyAlias 'contactList'
+    //   keyPassword '123456'
+    // }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
+            // signingConfig signingConfigs.release
+
         }
         release {
             // Caution! In production, you need to generate your own keystore file.
