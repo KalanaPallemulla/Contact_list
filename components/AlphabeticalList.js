@@ -7,7 +7,12 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 
-const AlphabeticalList = ({handleLongPressMove, groupedContacts}) => {
+const AlphabeticalList = ({
+  handleLongPressMove,
+  groupedContacts,
+  setLetter,
+  letter,
+}) => {
   // const letters = Object.keys(groupedContacts).sort();
   const letters = [
     '#',
@@ -39,45 +44,42 @@ const AlphabeticalList = ({handleLongPressMove, groupedContacts}) => {
     'Z',
   ];
 
-  const [currentLetterIndex, setCurrentLetterIndex] = useState(0);
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: (_, gestureState) => {
+        const touchedLetter = getTouchedLetter(gestureState.y0);
+        console.log('touchedLetter', touchedLetter);
+        if (letter !== touchedLetter) {
+          setLetter(touchedLetter);
+        }
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const touchedLetter = getTouchedLetter(gestureState.moveY);
+        console.log('touchedLetter', touchedLetter);
+        if (letter !== touchedLetter) {
+          setLetter(touchedLetter);
+        }
+      },
+      onPanResponderRelease: () => {
+        setLetter('');
+      },
+    }),
+  ).current;
 
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onPanResponderGrant: (evt, gestureState) => {
-      const touchLocationY = evt.nativeEvent.locationY;
-      const letterHeight = 20; // Adjust as needed
-      const touchedLetterIndex = Math.floor(touchLocationY / letterHeight);
-      setCurrentLetterIndex(touchedLetterIndex);
-    },
-  });
-
-  const handleLongPress = () => {
-    const pressedLetter = letters[currentLetterIndex];
-    console.log('Pressed Letter:', pressedLetter);
-    // You can perform any additional actions here with the pressed letter
+  const getTouchedLetter = y => {
+    const index = Math.floor(y / 50);
+    return letters[index];
   };
 
   return (
-    <View>
-      <View {...panResponder.panHandlers}>
-        <TouchableWithoutFeedback
-          onLongPress={handleLongPress}
-          onPressOut={() => {
-            console.log('Long Press Ended');
-            // You can add more functionality here if needed
-          }}>
-          <View>
-            {letters.map((letter, index) => (
-              <Text
-                key={index}
-                style={{
-                  fontWeight: index === currentLetterIndex ? 'bold' : 'normal',
-                }}>
-                {letter}
-              </Text>
-            ))}
+    <View style={styles.container}>
+      <View>
+        {letters.map((letter, index) => (
+          <View key={index} {...panResponder.panHandlers}>
+            <Text style={styles.letter}>{letter}</Text>
           </View>
-        </TouchableWithoutFeedback>
+        ))}
       </View>
     </View>
   );

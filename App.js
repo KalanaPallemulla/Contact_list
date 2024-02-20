@@ -11,7 +11,7 @@ import {
 import {data} from './helpers';
 import AlphabeticalList from './components/AlphabeticalList';
 import Contacts from 'react-native-contacts';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {PermissionsAndroid} from 'react-native';
 
 export default function App() {
   const sectionListRef = useRef(null);
@@ -24,21 +24,38 @@ export default function App() {
   const [itemHeight, setItemHeight] = useState(0);
   const [headerHeight, setHeaderHeight] = useState(0);
   const [fetchSection, setFetchSection] = useState([]);
+  const [letter, setLetter] = useState('');
 
   useEffect(() => {
-    // (async function getContactsFromStorage() {
-    //   try {
-    //     const value = await AsyncStorage.getItem('@Contacts');
-    //     if (value !== null) {
-    //       // We have data!!
-    //       setFetchSection(value);
-    //     }
-    //   } catch (error) {
-    //     // Error retrieving data
-    //   }
-    // })();
-    fetchContacts();
+    (async function requestContactsPermission() {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
+          {
+            title: 'Contacts Permission',
+            message: 'This app needs access to your contacts.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          console.log('Contacts permission granted');
+          fetchContacts();
+        } else {
+          console.log('Contacts permission denied');
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    })();
   }, []);
+
+  useEffect(() => {
+    if (letter) {
+      handleLongPressMove();
+    }
+  }, [letter]);
 
   const fetchContacts = () => {
     try {
@@ -93,90 +110,19 @@ export default function App() {
       data: groupedContacts[key],
     }));
 
-  useEffect(() => {
-    if (sections) {
-      let data = [];
-
-      sections.forEach(section => {
-        const {title, data: sectionData} = section;
-        data.push({[title]: sectionData});
-      });
-      setCotact;
-    }
-    // console.log('data', data);
-  }, [sections]);
-
-  const renderItem = ({item}) => {
-    return (
-      <TouchableOpacity onPress={() => console.log('Clicked contact:', item)}>
-        <View
-          style={styles.contactItem}
-          // onLayout={e =>
-          //   console.log('item height', e.nativeEvent.layout.height)
-          // }
-        >
-          <Text style={styles.contactName}>{item.displayName}</Text>
-          {item.phoneNumbers.map((phoneNumber, index) => (
-            <Text key={index} style={styles.contactNumber}>
-              {phoneNumber.number}
-            </Text>
-          ))}
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderSectionHeader = ({section: {title}}) => (
-    <TouchableOpacity onPress={() => console.log('Clicked section:', title)}>
-      <View
-        style={styles.sectionHeader}
-        // onLayout={e =>
-        //   console.log('header height', e.nativeEvent.layout.height)
-        // }
-      >
-        <Text style={styles.sectionHeaderText}>{title}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-
-  // const handleLongPressMove = letter => {
-  //   // Normalize letter (e.g., convert to uppercase)
-  //   const normalizedLetter = letter.toUpperCase().trim();
-
-  //   // Initialize sectionIndex
-  //   let sectionIndex = 11;
-
-  //   // Iterate over sections array
-  //   // for (let i = 0; i < sections.length; i++) {
-  //   //   if (sections[i].title === normalizedLetter) {
-  //   //     sectionIndex = i;
-  //   //     break; // Exit loop once the section is found
-  //   //   }
-  //   // }
-
-  //   // If sectionIndex is found, scroll to that section
-  //   if (sectionIndex !== -1 && sectionListRef.current) {
-  //     sectionListRef.current.scrollToLocation({
-  //       sectionIndex,
-  //       itemIndex: 0, // Scroll to the first item in the section
-  //       animated: true, // Optionally, you can enable animated scrolling
-  //     });
-  //   } else {
-  //     console.warn(`Section with title '${normalizedLetter}' not found.`);
-  //   }
-  // };
-
-  // console.log(sections);
-
-  const handleLongPressMove = letter => {
+  const handleLongPressMove = async () => {
     console.log('letter:', letter);
     // Normalize letter (e.g., convert to uppercase)
     const normalizedLetter = letter.toUpperCase().trim();
-
+    console.log('normalizedLetter', normalizedLetter);
     // Find the index of the section with the matching title letter
-    const sectionIndex = sections.findIndex(
-      section => section.title === normalizedLetter,
-    );
+    let sectionIndex = -1;
+    for (let i = 0; i < sections.length; i++) {
+      if (sections[i].title.toString() == normalizedLetter.toString()) {
+        sectionIndex = i;
+        break;
+      }
+    }
 
     // If section with the matching letter is found, calculate offset and scroll
     if (sectionIndex !== -1) {
@@ -195,29 +141,12 @@ export default function App() {
       console.warn(`Section with title '${normalizedLetter}' not found.`);
     }
   };
-  console.log(sections);
+
+  console.log(sections.findIndex(section => section.title === 'K'));
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Contact List</Text>
       <View style={styles.content}>
-        {/* <SectionList
-          ref={sectionListRef}
-          sections={sections}
-          renderItem={renderItem}
-          renderSectionHeader={renderSectionHeader}
-          keyExtractor={item => item.recordID}
-          getItemLayout={(data, index) => ({
-            length: 92, // specify the item height
-            offset: 92 * index, // calculate offset based on index and item height
-            index, // pass index to the layout
-          })}
-          virtualized={false}
-        /> */}
-        {/* {fetchedContactsData.map((item, index) => (
-          <View key={index}>
-            <Text>{item.givenName}</Text>
-          </View>
-        ))} */}
         <ScrollView style={{flex: 1}} ref={scrollViewRef}>
           {sections.map((section, sectionIndex) => (
             <View key={sectionIndex}>
@@ -261,6 +190,9 @@ export default function App() {
           <AlphabeticalList
             handleLongPressMove={handleLongPressMove}
             groupedContacts={groupedContacts}
+            sections={sections}
+            setLetter={setLetter}
+            letter={letter}
           />
         </View>
       </View>
